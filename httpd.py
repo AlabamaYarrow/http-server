@@ -3,7 +3,6 @@
 
 import socket
 import argparse
-from threadpool import Threadpool
 from connection import Connection
 
 # * Отвечать следующими заголовками для успешных GET-запросов:
@@ -12,8 +11,10 @@ from connection import Connection
 # * Content-Length
 # * Content-Type
 # * Connection
-# * Корректный Content-Type для: .html, .css, js, jpg, .jpeg, .png, .gif, .swf
+# * Корректный Content-Type для: .html, .css, .js, .jpg, .jpeg, .png, .gif, .swf
 # * Понимать пробелы и %XX в именах файлов
+
+
 
 def main():
 	parser = argparse.ArgumentParser(description='Python web server')
