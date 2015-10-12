@@ -1,57 +1,79 @@
 import os
+import urllib
 from time import gmtime, strftime
-
 
 class Connection:
 	
 	content_type_switch = {
 		'ico': 'image/x-icon',
+		'txt': 'text/plain',
 		'html': 'text/html',
 		'css': 'text/css',
 		'js': 'application/javascript',
-		'jpg': 'image/jpeg',
+		'jpg': 'image/jpeg',		
 		'jpeg': 'image/jpeg',
 		'png': 'image/png',
 		'gif': 'image/gif',
 		'swf': 'application/x-shockwave-flash'
 	}
 
-	def __init__(self, client_connection):
+
+	def __init__(self, client_connection, root_dir):
+		self.root_dir = root_dir or os.getcwd()
 		self.client_connection = client_connection
+		self.file_data = ''
+
+
+	def recieve_request(self):
+		self.request = self.client_connection.recv(1024)
+
+		self.handle_request()
+		
+		http_response = 'HTTP/1.1 {status}\r\n'.format(status=self.status)
+		http_response += 'Date: {date}\r\n'.format(date=strftime("%a, %d %b %Y %X GMT", gmtime()))
+		http_response += 'Server: Technoginx\r\n'
+		http_response += 'Connection: close\r\n'	
+		if self.status == '200 OK':
+			http_response += 'Content-Length: {length}\r\n'.format(length=len(self.file_data))		
+			http_response += 'Content-Type: {content_type}\r\n'.format(content_type = self.content_type)
+		http_response += '\r\n'
+
+		self.client_connection.sendall(http_response)		
+		if (self.request_method != 'HEAD'):		
+			self.client_connection.sendall(self.file_data)
+
 
 	def handle_request(self):
-		request = self.client_connection.recv(1024)
-		print request		
-		request_uri = request.split('\n', 1)[0].split(' ')[1]
-		self.send_response(request_uri)
-
-	def send_response(self, request_uri):
-		file_path = os.getcwd() + request_uri		
-		file_extension = request_uri.split('.')[-1]		
-		file_data = None
-		if len(file_extension) == 0:
-			status = '404 Not Found'
-		else:
-			try: 
-				f = open(file_path, 'r')
-				file_data = f.read()
-				content_type = self.content_type_switch[file_extension]	
-				print 'CONTENT TYPE' + content_type
-				status = '200 OK'
-			except IOError:		
-				status = '404 Not Found'
+		request_method, request_uri, request_version = self.request.split('\n', 1)[0].split(' ')		
+		self.request_method = request_method
+		if request_method not in ['GET', 'HEAD']:
+			self.status = '405 Method not allowed'
+			return 			
+		request_path = request_uri.split('?')[0]
+		request_path = urllib.unquote(request_path)
 		
-		http_response = ''
-		http_response += 'HTTP/1.1 {status}\n'.format(status=status)
-		http_response += 'Date: {date}\n'.format(date=strftime("%a, %d %b %Y %X GMT", gmtime()))
-		http_response += 'Server: Cherokee\n'
-		http_response += 'Connection: close\n'	
-		if status == '200 OK':
-			http_response += 'Content-Length: {length}\n'.format(length=len(file_data))		
-			http_response += 'Content-Type: text/html\n'
-		http_response += '\n'
+		if '..' in request_uri:
+			self.status = '400 Bad request'
+			return
+		file_path = self.root_dir + request_path		
+		
+		requesting_index = False
+		splited_path = file_path.split('.')
+		if len(splited_path) == 1:
+			requesting_index = True
+			file_extension = 'html'
+		else:
+			file_extension = splited_path[-1]
 
-		self.client_connection.sendall(http_response)
-		if status == '200 OK':
-			self.client_connection.sendall(file_data)		
-		self.client_connection.close()
+		if requesting_index == True:
+			file_path += 'index.html'
+			
+		try: 
+			f = open(file_path, 'r')
+			self.status = '200 OK'
+			self.content_type = self.content_type_switch[file_extension.lower()]	
+			self.file_data = f.read()
+			f.close()
+		except IOError:
+			if requesting_index: self.status = '403 Forbidden'
+			else: self.status = '404 Not Found'

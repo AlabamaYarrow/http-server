@@ -1,1 +1,5 @@
 *.pyc
+http-test-suite/
+httptest/
+httptest.py
+bigfile.txt
