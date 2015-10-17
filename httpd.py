@@ -41,7 +41,8 @@ def main():
 
 	signal.signal(signal.SIGCHLD, child_wait)
 
-	print 'Running server on port {port}...'.format(port=port)
+	print ('CPU cores: {ncpu}'.format(ncpu=ncpu))
+	print ('Running server on port {port}...'.format(port=port))
 
 	while True:
 		try:

@@ -1,5 +1,5 @@
 import os
-import urllib
+import urllib.parse
 from time import gmtime, strftime
 
 class Connection:
@@ -34,31 +34,54 @@ class Connection:
 		http_response += 'Server: Technoginx\r\n'
 		http_response += 'Connection: close\r\n'	
 		if self.status == '200 OK':
-			http_response += 'Content-Length: {length}\r\n'.format(length=len(self.file_data))		
+			http_response += 'Content-Length: {length}\r\n'.format(length=self.file_size)		
 			http_response += 'Content-Type: {content_type}\r\n'.format(content_type = self.content_type)
 		http_response += '\r\n'
 
-		self.client_connection.sendall(http_response)		
-		if (self.request_method != 'HEAD'):		
-			self.client_connection.sendall(self.file_data)
+		self.client_connection.sendall(http_response.encode())		
+		if (self.request_method != 'HEAD') and self.status == '200 OK':		
+			offset = 0
+			blocksize = 4096
+
+			while True:
+				sent = os.sendfile(self.client_connection.fileno(), self.f.fileno(), offset, blocksize)
+				if sent == 0:
+					break  # EOF
+				offset += sent
+			self.f.close()
+
+
+
+    # file = open("somefile", "rb")
+    # blocksize = os.path.getsize("somefile")
+    # sock = socket.socket()
+    # sock.connect(("127.0.0.1", 8021))
+    # offset = 0
+
+    # while True:
+    #     sent = sendfile(sock.fileno(), file.fileno(), offset, blocksize)
+    #     if sent == 0:
+    #         break  # EOF
+    #     offset += sent
+
 
 
 	def handle_request(self):
-		request_method, request_uri, request_version = self.request.split('\n', 1)[0].split(' ')		
+		request_method, request_uri, request_version = self.request.decode().split('\n', 1)[0].split(' ')		
 		self.request_method = request_method
 		if request_method not in ['GET', 'HEAD']:
 			self.status = '405 Method not allowed'
 			return 			
 		request_path = request_uri.split('?')[0]
-		request_path = urllib.unquote(request_path)
+		request_path = urllib.parse.unquote(request_path)
 		
 		if '..' in request_uri:
 			self.status = '400 Bad request'
 			return
-		file_path = self.root_dir + request_path		
+		self.file_path = self.root_dir + request_path		
 		
 		requesting_index = False
-		splited_path = file_path.split('.')
+		splited_path = self.file_path.split('.')
 		if len(splited_path) == 1:
 			requesting_index = True
 			file_extension = 'html'
@@ -66,14 +89,13 @@ class Connection:
 			file_extension = splited_path[-1]
 
 		if requesting_index == True:
-			file_path += 'index.html'
+			self.file_path += 'index.html'
 			
 		try: 
-			f = open(file_path, 'r')
+			self.f = open(self.file_path, 'r')			
 			self.status = '200 OK'
-			self.content_type = self.content_type_switch[file_extension.lower()]	
-			self.file_data = f.read()
-			f.close()
+			self.content_type = self.content_type_switch[file_extension.lower()]			
+			self.file_size=os.stat(self.file_path).st_size
 		except IOError:
 			if requesting_index: self.status = '403 Forbidden'
 			else: self.status = '404 Not Found'
