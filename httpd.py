@@ -13,24 +13,24 @@ def child_wait(signum, frame):
 	while True:
 		try:
 			pid, status = os.waitpid(
-				-1,         
-				os.WNOHANG  
+				-1,
+				os.WNOHANG
 			)
 		except OSError:
 			return
 
-	if pid == 0:  
+	if pid == 0:
 		return
 
 
 def main():
 	parser = argparse.ArgumentParser(description='Python web server')
 	parser.add_argument('-p', type = int, help='port number')
-	parser.add_argument('-r', type = int, help='root directory')
+	parser.add_argument('-r', type = str, help='root directory')
 	parser.add_argument('-c', type = int, help='CPU number')
 	args = vars(parser.parse_args())
 
-	host, port = '', args['p'] or 8888 
+	host, port = '', args['p'] or 8888
 	root_directory = args['r'] or ''
 	ncpu = args['c'] or 1
 
@@ -48,7 +48,7 @@ def main():
 		try:
 			client_connection, client_address = listen_socket.accept()
 		except IOError as e:
-			code, msg = e.args            
+			code, msg = e.args
 			if code == errno.EINTR:
 				continue
 			else:
@@ -58,7 +58,7 @@ def main():
 		if pid == 0:
 			listen_socket.close()
 			connection = Connection(client_connection, root_directory)
-			connection.recieve_request()
+			connection.handle_request()
 			os._exit(0)
 		else:
 			client_connection.close()
