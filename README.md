@@ -7,5 +7,5 @@ Python 3.3+
 Defaults: port 8888, current directory as root.
 
 ```sh
-python3 httpd.py
+> python3 httpd.py
 ```
