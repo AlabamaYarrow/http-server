@@ -9,19 +9,6 @@ import errno
 from connection import Connection
 
 
-# def child_wait(signum, frame):
-# 	while True:
-# 		try:
-# 			pid, status = os.waitpid(
-# 				-1,
-# 				os.WNOHANG
-# 			)
-# 		except OSError:
-# 			return
-
-# 	if pid == 0:
-# 		return
-
 CPU_WORKER_RATIO = 3
 
 
@@ -71,26 +58,6 @@ def main():
 
 	listen_socket.close()
 
-
-
-	# while True:
-	# 	try:
-	# 		client_connection, client_address = listen_socket.accept()
-	# 	except IOError as e:
-	# 		code, msg = e.args
-	# 		if code == errno.EINTR:
-	# 			continue
-	# 		else:
-	# 			raise		
-		
-	# 	pid = os.fork()
-	# 	if pid == 0:
-	# 		listen_socket.close()
-	# 		connection = Connection(client_connection, root_directory)
-	# 		connection.handle_request()
-	# 		os._exit(0)
-	# 	else:
-	# 		client_connection.close()
 
 if __name__ == '__main__':
 	main()
