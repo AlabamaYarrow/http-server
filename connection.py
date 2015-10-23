@@ -5,8 +5,8 @@ from time import gmtime, strftime
 
 CONTENT_TYPE_SWITCH = {
         'ico': 'image/x-icon',
-        'txt': 'text/plain; charset=utf-8',
-        'html': 'text/html; charset=utf-8',
+        'txt': 'text/plain',
+        'html': 'text/html',
         'css': 'text/css',
         'js': 'application/javascript',
         'jpg': 'image/jpeg',
