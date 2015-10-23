@@ -9,7 +9,7 @@ import errno
 from connection import Connection
 
 
-CPU_WORKER_RATIO = 3
+CPU_WORKER_RATIO = 25
 
 
 def main():
@@ -32,8 +32,11 @@ def main():
 	print('CPU cores: {ncpu}'.format(ncpu=ncpu))
 	print('Workers: {workers}'.format(workers=CPU_WORKER_RATIO * ncpu))
 	
+	forks = []
+
 	for x in range(0, CPU_WORKER_RATIO * ncpu):
 		pid = os.fork()
+		forks.append(pid)
 		if pid == 0:
 			print('Running worker with PID:', os.getpid()) 
 			while True:
@@ -49,14 +52,10 @@ def main():
 				connection.handle_request()
 				client_connection.close()
 
-	while True:
-		try:
-			os.waitpid(-1, os.WNOHANG)
-		except OSError:
-			listen_socket.close()
-			return
-
 	listen_socket.close()
+
+	for pid in forks:
+		os.waitpid(pid, 0)
 
 
 if __name__ == '__main__':
