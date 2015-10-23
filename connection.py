@@ -2,10 +2,11 @@ import os
 import urllib.parse
 from time import gmtime, strftime
 
+
 CONTENT_TYPE_SWITCH = {
         'ico': 'image/x-icon',
-        'txt': 'text/plain',
-        'html': 'text/html',
+        'txt': 'text/plain; charset=utf-8',
+        'html': 'text/html; charset=utf-8',
         'css': 'text/css',
         'js': 'application/javascript',
         'jpg': 'image/jpeg',
@@ -15,9 +16,8 @@ CONTENT_TYPE_SWITCH = {
         'swf': 'application/x-shockwave-flash'
 }
 
+
 class Connection:
-
-
     def __init__(self, client_connection, root_dir):
         self.client_connection = client_connection
         self.content_type = ''
@@ -31,16 +31,8 @@ class Connection:
         self.status = '200 OK'
 
     def handle_request(self):
-
         self.request = self.client_connection.recv(1024)
-        # self.request = b''
-        # while True:
-        #     data = self.client_connection.recv(1024)
-        #     self.request += data
-        #     if b'\r\n\r\n' in data:
-        #         break
         if not self.request: return
-
         self.parse_request()
 
         http_response = 'HTTP/1.1 {status}\r\n'.format(status=self.status)
@@ -91,7 +83,10 @@ class Connection:
 
         try:
             self.f = open(self.file_path, 'r')
-            self.content_type = CONTENT_TYPE_SWITCH[file_extension.lower()]
+            try:
+                self.content_type = CONTENT_TYPE_SWITCH[file_extension.lower()]
+            except KeyError:
+                self.content_type = 'application/octet-stream'
             self.file_size = os.stat(self.file_path).st_size
         except IOError:
             if requesting_index:
